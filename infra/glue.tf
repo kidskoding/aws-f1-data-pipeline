@@ -98,8 +98,10 @@ resource "aws_glue_job" "transform" {
   glue_version      = "5.0"
   worker_type       = "G.1X"
   number_of_workers = 2  # the smallest Spark job Glue allows
-  timeout           = 15 # minutes; a cost guard
+  timeout           = 10 # minutes; a cost guard
   max_retries       = 0
+  # Flex runs on spare capacity: about a third cheaper, may start a little later. Right for batch.
+  execution_class = "FLEX"
 
   command {
     name            = "glueetl"

@@ -135,8 +135,8 @@ season  drivers  matching  mismatched
 
 Everything is pay-per-use, and nothing runs unless you start it. A full run of six seasons costs a few cents.
 
-- **Glue:** 2 workers (the minimum), 15-minute timeout.
 - **Redshift Serverless:** 4 RPUs (the minimum), billed only while queries run, capped at 4 RPU-hours a day. Past the cap, the workgroup turns itself off.
+- **Glue:** 2 workers (the minimum) on Flex execution (about a third cheaper), 10-minute timeout.
 - **Athena:** about 1 MB scanned per run, with a 1 GB per-query cutoff.
 - **Lambda, Step Functions, SNS, Scheduler:** within the AWS free tier at this volume.
 - **The schedule is off by default**, and `make teardown` removes everything.
