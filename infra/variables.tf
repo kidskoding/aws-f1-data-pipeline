@@ -37,7 +37,7 @@ variable "redshift_base_capacity" {
 variable "redshift_daily_rpu_hours" {
   description = "Daily compute cap. Past it, the workgroup turns itself off until the next day."
   type        = number
-  default     = 4
+  default     = 2
 }
 
 variable "lambda_zip" {

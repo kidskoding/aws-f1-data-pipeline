@@ -17,7 +17,7 @@ Optional settings go in `infra/terraform.tfvars` (copy `terraform.tfvars.example
 | `notification_email` | empty | Where SNS sends success and failure emails. Confirm the subscription email AWS sends. |
 | `schedule_enabled` | `false` | Turn on the weekly run. |
 | `redshift_base_capacity` | `4` | Warehouse size in RPUs. |
-| `redshift_daily_rpu_hours` | `4` | Daily compute cap before the warehouse turns itself off. |
+| `redshift_daily_rpu_hours` | `2` | Daily compute cap before the warehouse turns itself off. |
 
 ## Run
 
