@@ -1,5 +1,3 @@
-# Redshift Serverless: the warehouse. Billed only while queries run, capped daily.
-
 data "aws_iam_policy_document" "redshift_assume" {
   statement {
     actions = ["sts:AssumeRole"]
@@ -48,7 +46,7 @@ resource "aws_redshiftserverless_namespace" "warehouse" {
   namespace_name        = "${var.project}-warehouse"
   db_name               = local.warehouse_db
   admin_username        = "admin"
-  manage_admin_password = true # Redshift generates it and keeps it in Secrets Manager
+  manage_admin_password = true
   iam_roles             = [aws_iam_role.redshift.arn]
   default_iam_role_arn  = aws_iam_role.redshift.arn
 }

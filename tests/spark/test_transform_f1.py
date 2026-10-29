@@ -111,7 +111,7 @@ def test_finish_categories(spark):
 
 def test_race_split_across_pages_is_kept_but_true_duplicates_are_rejected(spark):
     page0 = race_page("2025", "1", [result("norris", "1"), result("piastri", "2")])
-    page1 = race_page("2025", "1", [result("verstappen", "3"), result("norris", "1")])  # norris repeated
+    page1 = race_page("2025", "1", [result("verstappen", "3"), result("norris", "1")])
     good, bad = clean(spark, page0, page1)
     assert sorted(r["driver_id"] for r in good) == ["norris", "piastri", "verstappen"]
     assert bad == {("norris", "duplicate_result")}

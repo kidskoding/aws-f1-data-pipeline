@@ -6,7 +6,6 @@ locals {
   partition  = data.aws_partition.current.partition
   bucket     = "${var.project}-lake-${local.account_id}"
 
-  # Zones of the data lake, as prefixes in one bucket.
   raw_prefix     = "raw"
   curated_prefix = "curated"
   rejects_prefix = "rejects"

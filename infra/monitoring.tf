@@ -1,5 +1,3 @@
-# CloudWatch alarm: catches failed runs even if nobody reads the email.
-
 resource "aws_cloudwatch_metric_alarm" "pipeline_failed" {
   alarm_name          = "${var.project}-pipeline-failed"
   alarm_description   = "A pipeline run failed"

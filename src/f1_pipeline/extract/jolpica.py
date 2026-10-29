@@ -21,7 +21,6 @@ BASE_URL = "https://api.jolpi.ca/ergast/f1"
 USER_AGENT = "aws-f1-data-pipeline/0.1 (personal data engineering project)"
 PAGE_SIZE = 100  # the API's maximum page size
 
-# Raw dataset name -> API path segment.
 ENDPOINTS: dict[str, str] = {
     "results": "results",
     "sprint": "sprint",

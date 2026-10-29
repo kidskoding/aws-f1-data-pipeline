@@ -1,5 +1,3 @@
-# Athena: serverless SQL straight on the lake, through the Glue Data Catalog.
-
 resource "aws_athena_workgroup" "analytics" {
   name          = "${var.project}-analytics"
   description   = "Ad hoc SQL on the F1 data lake"

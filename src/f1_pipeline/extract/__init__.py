@@ -15,7 +15,7 @@ log = logging.getLogger(__name__)
 @dataclass
 class ExtractSummary:
     seasons: list[int]
-    pages: dict[str, int] = field(default_factory=dict)  # "results/2025" -> page count
+    pages: dict[str, int] = field(default_factory=dict)
     requests: int = 0
 
     def as_dict(self) -> dict[str, object]:

@@ -1,5 +1,3 @@
-# Step Functions runs the pipeline end to end; SNS reports the outcome.
-
 resource "aws_sns_topic" "pipeline" {
   name              = "${var.project}-notifications"
   kms_master_key_id = "alias/aws/sns"

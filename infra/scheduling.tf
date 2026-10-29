@@ -1,4 +1,3 @@
-# EventBridge Scheduler: weekly incremental run of the current season. Disabled by default.
 data "aws_iam_policy_document" "scheduler_assume" {
   statement {
     actions = ["sts:AssumeRole"]

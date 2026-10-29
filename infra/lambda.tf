@@ -1,6 +1,3 @@
-# Two Lambda functions from one package (`make package` builds ../build/lambda.zip):
-# extract (API to raw zone) and load (curated Parquet to Redshift).
-
 data "aws_iam_policy_document" "lambda_assume" {
   statement {
     actions = ["sts:AssumeRole"]

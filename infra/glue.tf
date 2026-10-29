@@ -1,6 +1,3 @@
-# Glue: a Data Catalog database per zone, a crawler that discovers the raw JSON's
-# schema, and the Spark job that builds the curated tables.
-
 resource "aws_glue_catalog_database" "raw" {
   name        = local.raw_database
   description = "Raw F1 API responses, discovered by the crawler"
@@ -31,7 +28,6 @@ resource "aws_iam_role_policy_attachment" "glue_service" {
   policy_arn = "arn:${local.partition}:iam::aws:policy/service-role/AWSGlueServiceRole"
 }
 
-# Least privilege on the lake: read raw and scripts, write curated, rejects and temp files.
 data "aws_iam_policy_document" "glue_lake" {
   statement {
     actions   = ["s3:ListBucket"]

@@ -1,6 +1,3 @@
-# One data lake bucket. Zones are prefixes: raw/ (API responses as received),
-# curated/ (clean Parquet), rejects/ (rows that failed a rule), athena-results/.
-
 resource "aws_s3_bucket" "lake" {
   bucket        = local.bucket
   force_destroy = var.force_destroy
