@@ -121,7 +121,8 @@ def parse_args(argv: list[str]) -> dict[str, str]:
         for key in keys:
             parser.add_argument(f"--{key}", default="")
         opts = vars(parser.parse_args(argv[1:]))
-    return {k: v.rstrip("/") for k, v in opts.items()}
+    # getResolvedOptions also returns Glue's own options, some set to None; keep only ours.
+    return {k: (opts.get(k) or "").rstrip("/") for k in keys}
 
 
 def read_pages(spark: SparkSession, path: str) -> DataFrame:
