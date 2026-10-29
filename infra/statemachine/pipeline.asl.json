@@ -1,0 +1,137 @@
+{
+  "Comment": "F1 data pipeline: extract from the API, transform with Glue, load Redshift, reconcile against the lake, notify.",
+  "StartAt": "Extract",
+  "States": {
+    "Extract": {
+      "Type": "Task",
+      "Comment": "Lambda: copy API pages into the raw zone",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "${extract_function_arn}",
+        "Payload.$": "$"
+      },
+      "ResultSelector": { "summary.$": "$.Payload" },
+      "ResultPath": "$.extract",
+      "Retry": [
+        {
+          "ErrorEquals": ["Lambda.ServiceException", "Lambda.AWSLambdaException", "Lambda.SdkClientException", "Lambda.TooManyRequestsException"],
+          "IntervalSeconds": 5,
+          "MaxAttempts": 3,
+          "BackoffRate": 2
+        }
+      ],
+      "Catch": [{ "ErrorEquals": ["States.ALL"], "ResultPath": "$.error", "Next": "NotifyFailure" }],
+      "Next": "TransformAndCatalog"
+    },
+    "TransformAndCatalog": {
+      "Type": "Parallel",
+      "Comment": "Build curated tables while the crawler catalogs the raw zone",
+      "Branches": [
+        {
+          "StartAt": "Transform",
+          "States": {
+            "Transform": {
+              "Type": "Task",
+              "Comment": "Glue Spark job; .sync waits for it to finish",
+              "Resource": "arn:aws:states:::glue:startJobRun.sync",
+              "Parameters": { "JobName": "${transform_job_name}" },
+              "End": true
+            }
+          }
+        },
+        {
+          "StartAt": "CrawlRaw",
+          "States": {
+            "CrawlRaw": {
+              "Type": "Task",
+              "Comment": "Fire and forget: the crawler finishes on its own",
+              "Resource": "arn:aws:states:::aws-sdk:glue:startCrawler",
+              "Parameters": { "Name": "${raw_crawler_name}" },
+              "Catch": [{ "ErrorEquals": ["Glue.CrawlerRunningException"], "Next": "CrawlerAlreadyRunning" }],
+              "End": true
+            },
+            "CrawlerAlreadyRunning": { "Type": "Succeed" }
+          }
+        }
+      ],
+      "ResultPath": null,
+      "Catch": [{ "ErrorEquals": ["States.ALL"], "ResultPath": "$.error", "Next": "NotifyFailure" }],
+      "Next": "LoadWarehouse"
+    },
+    "LoadWarehouse": {
+      "Type": "Task",
+      "Comment": "Lambda: replace warehouse tables from curated Parquet in one transaction",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": { "FunctionName": "${load_function_arn}", "Payload": {} },
+      "ResultSelector": { "results_rows.$": "$.Payload.results_rows", "tables.$": "$.Payload.tables" },
+      "ResultPath": "$.load",
+      "Retry": [
+        {
+          "ErrorEquals": ["Lambda.ServiceException", "Lambda.AWSLambdaException", "Lambda.SdkClientException", "Lambda.TooManyRequestsException"],
+          "IntervalSeconds": 5,
+          "MaxAttempts": 3,
+          "BackoffRate": 2
+        }
+      ],
+      "Catch": [{ "ErrorEquals": ["States.ALL"], "ResultPath": "$.error", "Next": "NotifyFailure" }],
+      "Next": "CountLakeRows"
+    },
+    "CountLakeRows": {
+      "Type": "Task",
+      "Comment": "Athena: count the same table in the lake",
+      "Resource": "arn:aws:states:::athena:startQueryExecution.sync",
+      "Parameters": {
+        "QueryString": "SELECT CAST(COUNT(*) AS VARCHAR) FROM ${curated_database}.results",
+        "WorkGroup": "${athena_workgroup}"
+      },
+      "ResultSelector": { "query_id.$": "$.QueryExecution.QueryExecutionId" },
+      "ResultPath": "$.athena",
+      "Catch": [{ "ErrorEquals": ["States.ALL"], "ResultPath": "$.error", "Next": "NotifyFailure" }],
+      "Next": "GetLakeCount"
+    },
+    "GetLakeCount": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::aws-sdk:athena:getQueryResults",
+      "Parameters": { "QueryExecutionId.$": "$.athena.query_id" },
+      "ResultSelector": { "lake_rows.$": "$.ResultSet.Rows[1].Data[0].VarCharValue" },
+      "ResultPath": "$.athena",
+      "Catch": [{ "ErrorEquals": ["States.ALL"], "ResultPath": "$.error", "Next": "NotifyFailure" }],
+      "Next": "Reconcile"
+    },
+    "Reconcile": {
+      "Type": "Choice",
+      "Comment": "The warehouse must hold exactly the rows the lake holds",
+      "Choices": [{ "Variable": "$.athena.lake_rows", "StringEqualsPath": "$.load.results_rows", "Next": "NotifySuccess" }],
+      "Default": "ReconciliationFailed"
+    },
+    "ReconciliationFailed": {
+      "Type": "Pass",
+      "Parameters": { "Error": "ReconciliationFailed", "Cause.$": "States.Format('Lake has {} result rows but the warehouse has {}', $.athena.lake_rows, $.load.results_rows)" },
+      "ResultPath": "$.error",
+      "Next": "NotifyFailure"
+    },
+    "NotifySuccess": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::sns:publish",
+      "Parameters": {
+        "TopicArn": "${topic_arn}",
+        "Subject": "F1 pipeline succeeded",
+        "Message.$": "States.Format('Loaded {} result rows. Lake and warehouse match.', $.load.results_rows)"
+      },
+      "ResultPath": null,
+      "End": true
+    },
+    "NotifyFailure": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::sns:publish",
+      "Parameters": {
+        "TopicArn": "${topic_arn}",
+        "Subject": "F1 pipeline failed",
+        "Message.$": "States.JsonToString($.error)"
+      },
+      "ResultPath": null,
+      "Next": "Failed"
+    },
+    "Failed": { "Type": "Fail", "Error": "PipelineFailed", "Cause": "See the NotifyFailure step input for details" }
+  }
+}
