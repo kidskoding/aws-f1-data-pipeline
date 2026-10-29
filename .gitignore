@@ -1,6 +1,14 @@
 # Local data zones (rebuilt by `make extract` and `make local`)
 data/
 
+# Terraform (the provider lock file .terraform.lock.hcl IS committed)
+infra/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+crash.log
+
 # Build output
 build/
 dist/

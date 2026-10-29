@@ -1,0 +1,3 @@
+# Copy to terraform.tfvars (gitignored) and edit.
+notification_email = "you@example.com"
+schedule_enabled   = false

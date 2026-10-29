@@ -1,18 +1,18 @@
 [project]
 name = "f1-pipeline"
 version = "0.1.0"
-description = "Production-style AWS batch data pipeline for Formula 1 data: Lambda, S3, Glue, Athena, Redshift Serverless, Step Functions."
+description = "a production-style AWS batch data pipeline for F1 data: Lambda, S3, Glue, Athena, Redshift Serverless, and Step Functions!"
 readme = "README.md"
 requires-python = ">=3.12"
 license = { text = "MIT" }
 authors = [{ name = "Anirudh Konidala" }]
+
 # No runtime dependencies: Lambda provides boto3, and the extractor uses only the standard library.
 dependencies = []
 
 [dependency-groups]
 dev = [
   "boto3>=1.40",
-  "cfn-lint>=1.40",
   "duckdb>=1.4",
   "moto[s3]>=5.1",
   "mypy>=1.18",
