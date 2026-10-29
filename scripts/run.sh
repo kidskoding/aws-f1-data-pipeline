@@ -13,7 +13,8 @@ execution="$(aws stepfunctions start-execution \
   --input "$(jq -cn --arg s "$seasons" '{seasons: $s}')" \
   --query executionArn --output text)"
 echo "Started: $execution"
-echo "Console: https://console.aws.amazon.com/states/home#/v2/executions/details/$execution"
+region="$(cut -d: -f4 <<<"$execution")"
+echo "Console: https://${region}.console.aws.amazon.com/states/home?region=${region}#/v2/executions/details/$execution"
 
 while true; do
   status="$(aws stepfunctions describe-execution --execution-arn "$execution" --query status --output text)"
