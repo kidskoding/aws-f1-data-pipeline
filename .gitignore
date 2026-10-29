@@ -1,0 +1,20 @@
+# Local data zones (rebuilt by `make extract` and `make local`)
+data/
+
+# Build output
+build/
+dist/
+*.zip
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Editors and OS
+.idea/
+.vscode/
+.DS_Store
