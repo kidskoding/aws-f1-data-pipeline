@@ -1,6 +1,6 @@
 """Run the analytics SQL and print the results.
 
-    python -m f1_pipeline.query                # against Redshift Serverless (reads stack outputs)
+    python -m f1_pipeline.query                # against Redshift Serverless (reads Terraform outputs)
     python -m f1_pipeline.query --local        # against local Parquet with DuckDB, no AWS needed
     python -m f1_pipeline.query 02_championship.sql
 
@@ -11,13 +11,14 @@ schemas onto data/curated/<table>/*.parquet.
 from __future__ import annotations
 
 import argparse
+import json
 from collections.abc import Callable, Sequence
 from pathlib import Path
 from typing import Any
 
 from f1_pipeline.warehouse import RedshiftData, list_sql, read_sql, split_statements
 
-STACK_NAME = "f1-data-pipeline"
+OUTPUTS_FILE = Path("build/terraform-outputs.json")  # written by `make deploy`
 Runner = Callable[[str], tuple[list[str], list[list[Any]]]]
 
 
@@ -46,18 +47,17 @@ def _is_number(value: Any) -> bool:
     return not isinstance(value, bool)
 
 
-def redshift_runner() -> Runner:
+def redshift_runner(outputs_file: Path) -> Runner:
     import boto3
 
-    outputs = {
-        o["OutputKey"]: o["OutputValue"]
-        for o in boto3.client("cloudformation").describe_stacks(StackName=STACK_NAME)["Stacks"][0]["Outputs"]
-    }
+    if not outputs_file.exists():
+        raise SystemExit(f"{outputs_file} not found. Run `make deploy` first.")
+    outputs = {name: item["value"] for name, item in json.loads(outputs_file.read_text()).items()}
     warehouse = RedshiftData(
         boto3.client("redshift-data"),
-        workgroup=outputs["WorkgroupName"],
-        database=outputs["DatabaseName"],
-        secret_arn=outputs["AdminSecretArn"],
+        workgroup=outputs["workgroup_name"],
+        database=outputs["database_name"],
+        secret_arn=outputs["admin_secret_arn"],
     )
     return warehouse.query
 
@@ -85,7 +85,7 @@ def main() -> None:
     parser.add_argument("--curated", default="data/curated", help="local curated folder for --local")
     args = parser.parse_args()
 
-    run = duckdb_runner(Path(args.curated)) if args.local else redshift_runner()
+    run = duckdb_runner(Path(args.curated)) if args.local else redshift_runner(OUTPUTS_FILE)
     for name in args.files or list_sql("analytics"):
         for statement in split_statements(read_sql("analytics", name)):
             columns, rows = run(statement.sql)
