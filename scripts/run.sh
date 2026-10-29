@@ -27,9 +27,10 @@ while true; do
       exit 0 ;;
     *)
       echo; echo "Finished with status $status." >&2
-      aws stepfunctions get-execution-history --execution-arn "$execution" --reverse-order --max-items 5 \
-        --query 'events[?contains(type, `Failed`)].[type, executionFailedEventDetails.cause || taskFailedEventDetails.cause || lambdaFunctionFailedEventDetails.cause]' \
-        --output text >&2
+      aws stepfunctions get-execution-history --execution-arn "$execution" --output json \
+        | jq -r '.events[]
+            | (.taskFailedEventDetails // .lambdaFunctionFailedEventDetails // .executionFailedEventDetails) as $f
+            | select($f) | "\(.type): \($f.error // "") \(($f.cause // "") | .[0:800])"' >&2
       exit 1 ;;
   esac
 done
